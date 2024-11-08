@@ -1,4 +1,4 @@
-# Dataset Bias Detection and Augmentation Tool 📊
+# BiasBalance - A Dataset Bias Detection and Augmentation Tool 📊
 
 A Streamlit-based web application for analyzing categorical data, detecting bias, performing independence testing and augmenting data.
 
