@@ -39,6 +39,7 @@ def main():
                 st.session_state.optional_categorical_cols = optional_cols
                 st.session_state.categorical_cols = default_cols.copy()
                 st.session_state.previous_file = uploaded_file.name
+                st.session_state.initial_dataset_size = len(df)
                 
                 st.success("✅ Data loaded successfully!")
                 st.rerun()
@@ -47,6 +48,27 @@ def main():
                 clear_session_state()
     else:
         st.info(f"Current dataset: {st.session_state.previous_file}")
+        
+        # Check if dataset has been modified through augmentation
+        if ('initial_dataset_size' in st.session_state and 
+            st.session_state.df is not None and 
+            len(st.session_state.df) > st.session_state.initial_dataset_size):
+            
+            st.success(f"""
+            Dataset has been augmented!
+            - Original size: {st.session_state.initial_dataset_size} rows
+            - Current size: {len(st.session_state.df)} rows
+            """)
+            
+            # Add download button for the modified dataset
+            csv = st.session_state.df.to_csv(index=False)
+            st.download_button(
+                label="Download Augmented Dataset",
+                data=csv,
+                file_name="augmented_dataset.csv",
+                mime="text/csv"
+            )
+        
         if st.button("Remove Dataset"):
             clear_session_state()
             st.rerun()

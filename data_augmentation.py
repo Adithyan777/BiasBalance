@@ -158,7 +158,7 @@ def format_augmentation_prompt(
         f"\nDataset Information:",
         f"- Total Existing Rows: {dataset_info['num_rows']}",
         f"- Total Columns: {dataset_info['num_cols']}",
-        f"- Dataset Tail (for reference):",
+        f"- Dataset Tail (for reference):\n",
         f"{dataset_info['tail']}",
         f"\nGeneration Requirements:"
     ]
@@ -216,7 +216,7 @@ def process_multiple_columns(
     dataset_info = {
         'num_rows': len(st.session_state.df),
         'num_cols': len(st.session_state.df.columns),
-        'tail': st.session_state.df.tail().to_string(index=False)
+        'tail': st.session_state.df.tail().to_csv(index=False)
     }
     category_info = {
         col: sorted(st.session_state.df[col].fillna('Missing').astype(str).unique().tolist())

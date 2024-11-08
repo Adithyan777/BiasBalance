@@ -232,3 +232,7 @@ def init_session_state():
         st.session_state.negative_threshold = -1.3
     if 'alpha' not in st.session_state:
         st.session_state.alpha = 5.0
+    if 'latest_saved_test' not in st.session_state:
+        st.session_state.latest_saved_test = None
+    if 'generated_response' not in st.session_state:
+        st.session_state.generated_response = None

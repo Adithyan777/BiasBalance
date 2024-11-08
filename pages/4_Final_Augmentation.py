@@ -5,6 +5,24 @@ from data_augmentation import process_multiple_columns, openai_function, generat
 import pandas as pd
 import os
 from openai import OpenAI,AuthenticationError
+import numpy as np
+
+def are_all_test_results_identical(saved_results, previous_results):
+    """Compare two lists of test results with more flexible comparison"""
+    if saved_results is None or previous_results is None:
+        return False
+        
+    if len(saved_results) != len(previous_results):
+        return False
+        
+    for saved, prev in zip(saved_results, previous_results):
+        # Compare only essential elements
+        if (saved[0] != prev[0] or  # column name
+            not np.array_equal(np.array(saved[2]), np.array(prev[2])) or  # observed
+            not np.array_equal(np.array(saved[3]), np.array(prev[3])) or  # expected
+            saved[4] != prev[4]):  # categories
+            return False
+    return True
 
 def validate_api_key(api_key: str) -> bool:
     """Test if the API key is valid by making a simple API call"""
@@ -18,14 +36,70 @@ def validate_api_key(api_key: str) -> bool:
 
 def reset_augmentation_state():
     if 'generated_response' in st.session_state:
-        del st.session_state.generated_response
+        st.session_state.generated_response = None
     if 'data_updated' in st.session_state:
-        del st.session_state.data_updated
+        st.session_state.data_updated = None
     if 'previous_test_results' in st.session_state:
-        del st.session_state.previous_test_results
+        st.session_state.previous_test_results = None
+    if 'combined_df' in st.session_state:
+        st.session_state.combined_df = None
+    if 'last_generated_size' in st.session_state:
+        st.session_state.last_generated_size = None
+
+def load_updated_dataset():
+    """
+    Safely loads and updates the dataset while handling state management.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        if not hasattr(st.session_state, 'df') or st.session_state.df is None:
+            return False
+            
+        if not hasattr(st.session_state, 'generated_response') or st.session_state.generated_response is None:
+            return False
+            
+        # Store current state
+        current_generated_size = len(st.session_state.generated_response)
+        current_data = st.session_state.generated_response.copy()
+        
+        # Verify data integrity
+        if current_data.empty:
+            return False
+            
+        # Create combined dataframe
+        combined_df = pd.concat(
+            [st.session_state.df, current_data], 
+            ignore_index=True
+        )
+        
+        # Update all relevant session states atomically
+        st.session_state.combined_df = combined_df
+        st.session_state.last_generated_size = current_generated_size
+        st.session_state.data_updated = True
+        st.session_state.df = combined_df.copy()
+        
+        return True
+        
+    except Exception as e:
+        st.error(f"Error loading dataset: {str(e)}")
+        return False
+
+def init_augmentation_state():
+    """Initialize or reset augmentation-specific state"""
+    if 'previous_test_results' not in st.session_state:
+        st.session_state.previous_test_results = None
+    if 'generated_response' not in st.session_state:
+        st.session_state.generated_response = None
+    if 'data_updated' not in st.session_state:
+        st.session_state.data_updated = None
+    if 'last_generated_size' not in st.session_state:
+        st.session_state.last_generated_size = None
+    if 'combined_df' not in st.session_state:
+        st.session_state.combined_df = None
 
 def main():
     init_session_state()
+    init_augmentation_state()
     render_sidebar()
 
     # Initialize api_key_input in session state if not present
@@ -67,11 +141,12 @@ def main():
             st.divider()
     
     # Check if test results have changed
-    if 'previous_test_results' not in st.session_state:
-        st.session_state.previous_test_results = st.session_state.saved_test_results.copy()
-    elif st.session_state.previous_test_results != st.session_state.saved_test_results:
+    current_test_results = st.session_state.saved_test_results
+    previous_results = st.session_state.previous_test_results
+    
+    if not are_all_test_results_identical(current_test_results, previous_results):
         reset_augmentation_state()
-        st.session_state.previous_test_results = st.session_state.saved_test_results.copy()
+        st.session_state.previous_test_results = current_test_results.copy() if current_test_results else None
     
     if not st.session_state.saved_test_results:
         st.info("No saved test results found. Please run tests and save the results to do the augmentation.")
@@ -83,6 +158,7 @@ def main():
     with col1:
         if st.button("Clear Saved Results", type="secondary"):
             st.session_state.saved_test_results = []
+            reset_augmentation_state()
             st.rerun()
     
     # Pass it to generate_data function if the messages sent to OpenAI are to be displayed
@@ -107,6 +183,7 @@ def main():
     if st.button("Generate Data", disabled=api_key_missing):
         # Use session state API key if environment variable is not set
         os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY") or st.session_state.openai_api_key
+        st.session_state.generated_response = None
         response = generate_data(combined_prompt, openai_function, ContainerModel, selected_model)
         if not response.empty:
             st.session_state.generated_response = response
@@ -117,19 +194,26 @@ def main():
         st.dataframe(st.session_state.generated_response)
         
         if hasattr(st.session_state, 'df') and st.session_state.df is not None:
-            combined_df = pd.concat([st.session_state.df, st.session_state.generated_response], ignore_index=True)
-            csv = combined_df.to_csv(index=False)
-            st.download_button(
-                label="Download Updated Dataset",
-                data=csv,
-                file_name="augmented_dataset.csv",
-                mime="text/csv"
+            current_generated_size = len(st.session_state.generated_response)
+            
+            is_already_loaded = (
+                'last_generated_size' in st.session_state and 
+                st.session_state.last_generated_size == current_generated_size and
+                'data_updated' in st.session_state and 
+                st.session_state.data_updated
             )
             
-            if st.button("Load Updated Dataset"):
-                st.session_state.df = combined_df
-                st.session_state.data_updated = True
-                st.success(f"Dataset loaded successfully. Updated no.of columns {len(st.session_state.df)}")
+            if st.button("Load Updated Dataset", disabled=is_already_loaded):
+                with st.spinner("Loading dataset..."):
+                    if load_updated_dataset():
+                        st.rerun()
+                    else:
+                        st.error("Failed to load dataset. Please try again.")
+            
+            if is_already_loaded:
+                st.success(f"Dataset loaded successfully. Updated no.of rows: {len(st.session_state.df)}")
+                st.info("You can download the updated dataset from the Home page or run more tests to augment further.")
+
 
 if __name__ == "__main__":
     main()
