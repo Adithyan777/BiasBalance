@@ -115,8 +115,8 @@ def main():
         with st.container():
             st.markdown("### 🔑 OpenAI API Key Required")
             st.markdown("""
-            To use the data augmentation feature, you need to provide an OpenAI API key.
-            The key will be stored only for this session.
+            To use the data augmentation feature, you need to provide an OpenAI API key.\n
+            The key will be stored only for this session. Refresh the page to clear the key.
             """)
             
             with st.expander("⚙️ API Key Configuration", expanded=True):

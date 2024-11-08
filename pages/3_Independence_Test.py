@@ -11,7 +11,7 @@ def main():
         st.stop()
     
     df = st.session_state.df
-    st.header("Independence Testing")
+    st.title("Independence Testing")
         
     # Use the updated categorical_cols from session state
     col1 = st.selectbox(

@@ -135,7 +135,6 @@ def display_goodness_of_fit_report(column: str, categories: List[str], chi2: flo
     st.write(f"### Detailed Bias Analysis Report for '{column}'")
     
     st.write("#### Test Information")
-    st.write(f"- Test Type: Chi-square Goodness-of-Fit Test")
     st.write(f"- Distribution Type: {distribution_type}")
     st.write(f"- Significance Level (α): {alpha/100:.3f}")
     
