@@ -11,4 +11,4 @@ EXPOSE 8501
 
 
 ENTRYPOINT ["streamlit", "run"]
-CMD ["Home.py"]
+CMD ["src/Home.py"]
