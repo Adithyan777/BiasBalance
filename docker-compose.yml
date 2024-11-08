@@ -1,9 +1,11 @@
+name: bias-detection-project    # Added project name
 version: '3.8'
 
 services:
 
   streamlit-app:
     build: .
+    image: bias-detection-app:latest      # Added image name and tag
     container_name: bias-detection-app
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}  # Can be set via .env file or command line
