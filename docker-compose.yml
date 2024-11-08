@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+
+  streamlit-app:
+    build: .
+    container_name: bias-detection-app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}  # Can be set via .env file or command line
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
