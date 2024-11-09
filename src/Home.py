@@ -1,6 +1,7 @@
 import streamlit as st
 from components import render_sidebar
 from utils import init_session_state, load_dataset, get_categorical_columns, clear_session_state
+import os
 
 st.set_page_config(
     page_title="Bias Detection and Independence Testing",
@@ -29,6 +30,25 @@ def main():
     
     if st.session_state.df is None:
         uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+        if st.button("📝 Load Test Dataset", help="Loads a test dataset making it easier to checkout the features."):
+            test_dataset_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "test-dataset.csv")
+            try:
+                df = load_dataset(test_dataset_path)
+                default_cols, optional_cols = get_categorical_columns(df)
+                
+                st.session_state.df = df
+                st.session_state.default_categorical_cols = default_cols
+                st.session_state.optional_categorical_cols = optional_cols
+                st.session_state.categorical_cols = default_cols.copy()
+                st.session_state.previous_file = "test-dataset.csv"
+                st.session_state.initial_dataset_size = len(df)
+                
+                st.success("�� Test data loaded successfully!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error loading test dataset: {str(e)}")
+                clear_session_state()
+
         if uploaded_file is not None:
             try:
                 df = load_dataset(uploaded_file)
