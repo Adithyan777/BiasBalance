@@ -13,7 +13,7 @@ A Streamlit-based web application for analyzing categorical data, detecting bias
 
 ## Prerequisites 📋
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - pip (Python package installer)
 - Docker (optional)
 
@@ -48,16 +48,14 @@ The application will be available at `http://localhost:8501`
 
 ### Method 2: Using Docker 🐳
 
-1. Clone the repository
-
-2. Build the Docker image
+1. Pull the Docker image
 ```bash
-docker build -t bias-detection-tool .
+docker pull adithyn/biasbalance
 ```
 
-3. Run the container
+2. Run the container
 ```bash
-docker compose up
+docker run --name biasbalance-app -p 8501:8501 adithyn/biasbalance
 ```
 
 The application will be available at `http://localhost:8501`
@@ -68,6 +66,10 @@ Create a `.env` file in the root directory with the following variables (if need
 ```
 OPENAI_API_KEY=your_api_key_here
 ```
+
+Also you can add the API KEY when prompted in the application. It will be stored in the session state and used for data augmentation.
+
+Note that the OpenAI API key is optional and only required for the Data Augmentation feature.
 
 ## Usage Guide 📖
 
